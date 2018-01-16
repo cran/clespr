@@ -1,0 +1,23 @@
+exportPattern("^[[:alpha:]]+")
+
+importFrom("stats", "coef", "cov", "dist", "dnorm", "optim", "pnorm",
+             "rnorm")
+
+importFrom("utils", "combn")
+
+importFrom("pbivnorm", "pbivnorm")
+
+importFrom("survival","survreg", "Surv")
+
+importFrom("foreach", "foreach", "%dopar%")
+
+importFrom("parallel", "detectCores", "makeCluster","stopCluster")
+
+importFrom("doParallel", "registerDoParallel")
+
+importFrom("magic", "adiag")
+
+importFrom("MASS", "polr")
+
+importFrom("AER", "tobit")
+

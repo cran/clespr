@@ -1,0 +1,16 @@
+1c863208dc3a54b253629ce5d0d70392 *DESCRIPTION
+d19406657cfc53dc708379a6c36b45a5 *NAMESPACE
+620abeb24a1afade1ec414577d2505cf *R/func.cl.ord.R
+42e64e97ef433dd8c5a43ef2ba7098b9 *R/func.cl.prop.R
+a7ff4cf9a8b3335e5bb3a6a98ede3ef2 *R/func.cle.ord.R
+f5faf5999a67abaa66b2f1a8cbb3dc56 *R/func.cle.ord.repar.R
+054753af4fc9541b1735f2e31496ae8e *R/func.cle.prop.R
+c10ae49aae189a0ad81b318f7190a65c *R/func.obs.ord.R
+dcda771b4db6e067756a46f722404f6e *R/func.obs.prop.R
+6b0ad2512d06265c031a0d8743273330 *man/func.cl.ord.Rd
+972366bc101eb41dfa7e0579a097a6a3 *man/func.cl.ord.repar.Rd
+2e0b9e1ad5ae37f181bcc6f842a2fb26 *man/func.cl.prop.Rd
+7e71b8aec071dde03213b04340df3397 *man/func.cle.ord.Rd
+2387bef174f8844ecfce49463801ad9f *man/func.cle.prop.Rd
+7117019bb223029e90eb891b9434feef *man/func.obs.ord.Rd
+c8cf23d710fd34d3a64bde3e32799e4b *man/func.obs.prop.Rd
