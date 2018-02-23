@@ -1,7 +1,7 @@
 exportPattern("^[[:alpha:]]+")
 
 importFrom("stats", "coef", "cov", "dist", "dnorm", "optim", "pnorm",
-             "rnorm")
+             "rnorm", "glm", "binomial")
 
 importFrom("utils", "combn")
 
@@ -16,6 +16,8 @@ importFrom("parallel", "detectCores", "makeCluster","stopCluster")
 importFrom("doParallel", "registerDoParallel")
 
 importFrom("magic", "adiag")
+
+importFrom("clordr", "clic")
 
 importFrom("MASS", "polr")
 

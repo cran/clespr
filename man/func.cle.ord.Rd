@@ -36,6 +36,8 @@ func.cle.ord(vec.yobs, mat.X, mat.lattice, radius, n.cat, n.sim = 100,
 \code{mat.asyvar}: estimated asymptotic covariance matrix \eqn{H^{-1}(\theta)J(\theta)H^{-1}(\theta)} for the estimator; and
 
 \code{vec.comp}: a vector of computational time for parameter and standard error estimation.
+
+\code{CLIC}: Composite likelihood information criterion proposed by Varin and Vidoni (2005), i.e. \eqn{-2*logCL(\theta) + 2*trace(H^{-1}(\theta)J(\theta))}
 }
 \description{
 \code{func.cle.ord} performs composite likelihood estimation of parameters and their standard errors in a spatial ordered probit model by maximizing its composite log-likelihood.
@@ -44,6 +46,7 @@ func.cle.ord(vec.yobs, mat.X, mat.lattice, radius, n.cat, n.sim = 100,
 Given the design matrix, the vector of observed responses, spatial lattice data, weight radius, number of categories, and the prespecified number of simulated vectors of responses used in estimating the Godambe information, this function assumes initial values of cutoff points and \eqn{\beta} as the estimates from the standard ordered probit regression with independent responses. After initial reparameterization, it first estimates parameters of interest by maximizing the composite log-likelihood using \code{optim}, then computes the reparameterized sample covariance matrix and the set of standard errors, and finally reverse the reparameterization to obtain estimates corresponding to the original parameterization.
 }
 \examples{
+# Example of n.cat = 3 (Spatial ordinal regression)
 # True parameter
 vec.cutoff <- 2; vec.beta <- c(1, 2, 1, 0, -1); sigmasq <- 0.8; rho <- 0.6; radius <- 5
 vec.par <- c(vec.cutoff, vec.beta, sigmasq, rho)
@@ -70,8 +73,14 @@ vec.yobs <- func.obs.ord(vec.ylat, vec.alpha=c(-Inf,0,vec.cutoff,Inf))
 \dontrun{
 ord.example <- func.cle.ord(vec.yobs, mat.X, mat.lattice, radius, n.cat,
 n.sim=100, parallel = TRUE, n.core = 2)
+
 round(ord.example$vec.par,4)
-# [1]  1.8395  0.9550  1.9690  0.9565  0.0349 -1.0398  0.8200  0.5578
+# alpha1   beta0   beta1   beta2   beta3   beta4 sigma^2     rho
+# 1.8395  0.9550  1.9690  0.9565  0.0349 -1.0398  0.8200  0.5578
+
+round(ord.example$vec.se,4)
+# alpha1   beta0   beta1   beta2   beta3   beta4 sigma^2     rho
+# 0.1602  0.1222  0.1463  0.0916  0.0485  0.0889  0.1935  0.1267
 }
 
 # Without parallel computing
@@ -79,9 +88,42 @@ round(ord.example$vec.par,4)
 \dontrun{
 ord.example2 <- func.cle.ord(vec.yobs, mat.X, mat.lattice, radius,
 n.cat, n.sim=100, parallel = FALSE)
-round(ord.example2$vec.par,4)
-# [1]  1.8395  0.9550  1.9690  0.9565  0.0349 -1.0398  0.8200  0.5578
 }
+
+# Example for n.cat = 2 (i.e. Spatial probit regression)
+# True parameter
+vec.beta <- c(1, 2, 1, 0, -1); sigmasq <- 0.5; rho <- 0.6; radius <- 5
+vec.par <- c(vec.beta, sigmasq, rho)
+
+# Coordinate matrix
+n.cat <- 2 ; n.lati <- n.long <- 40
+n.site <- n.lati * n.long
+mat.lattice <- cbind(rep(1:n.lati, n.long), rep(1:n.long, each=n.lati))
+mat.dist <- as.matrix(dist(mat.lattice, upper=TRUE, diag=TRUE))
+mat.cov <- sigmasq * rho^mat.dist
+
+set.seed(123)
+# Generate regression (design) matrix with intercept
+mat.X <- cbind(rep(1, n.site),scale(matrix(rnorm(n.site*(length(vec.beta)-1)),nrow=n.site)))
+vec.Z <- t(chol(mat.cov)) \%*\% rnorm(n.site) + mat.X \%*\% vec.beta
+vec.epsilon <- diag(sqrt(1-sigmasq), n.site) \%*\% rnorm(n.site)
+vec.ylat <- as.numeric(vec.Z + vec.epsilon)
+# Convert to the vector of observation
+vec.yobs <- func.obs.ord(vec.ylat, vec.alpha=c(-Inf,0,Inf))
+
+\dontrun{
+probit.example <- func.cle.ord(vec.yobs, mat.X, mat.lattice, radius, n.cat,
+n.sim=100, parallel = TRUE, n.core = 4)
+
+round(probit.example$vec.par,4)
+# beta0   beta1   beta2   beta3   beta4 sigma^2     rho
+# 1.0427  2.2250  1.0422  0.0156 -1.1489  0.4402  0.6636
+
+round(probit.example$vec.se,4)
+# beta0   beta1   beta2   beta3   beta4 sigma^2     rho
+# 0.1198  0.1413  0.0863  0.0523  0.0935  0.1600  0.1263
+}
+
 
 }
 \references{

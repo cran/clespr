@@ -1,7 +1,7 @@
 Package: clespr
 Type: Package
 Title: Composite Likelihood Estimation for Spatial Data
-Version: 1.0.1
+Version: 1.1.2
 Authors@R: c(
     person("Ting Fung (Ralph)", "Ma", email = "tingfung.ma@wisc.edu", role = c("cre", "aut")),
     person("Wenbo", "Wu", email = "wenbowu@umich.edu", role = "aut"),
@@ -16,10 +16,10 @@ LazyData: TRUE
 RoxygenNote: 6.0.1
 Depends: R (>= 3.2.0)
 Imports: AER (>= 1.2-5), pbivnorm (>= 0.6.0), MASS (>= 7.3-45), magic
-        (>= 1.5-6), survival (>= 2.37-5), doParallel (>= 1.0.11),
-        foreach (>= 1.2.0), utils, stats
+        (>= 1.5-6), survival (>= 2.37-5), clordr (>= 1.0.2), doParallel
+        (>= 1.0.11), foreach (>= 1.2.0), utils, stats
 NeedsCompilation: no
-Packaged: 2018-01-16 00:25:24 UTC; Ralph
+Packaged: 2018-02-23 04:23:42 UTC; Ralph
 Author: Ting Fung (Ralph) Ma [cre, aut],
   Wenbo Wu [aut],
   Jun Zhu [aut],
@@ -27,4 +27,4 @@ Author: Ting Fung (Ralph) Ma [cre, aut],
   Daniel Walsh [ctb],
   Robin Russell [ctb]
 Repository: CRAN
-Date/Publication: 2018-01-16 10:33:10 UTC
+Date/Publication: 2018-02-23 19:05:06 UTC

@@ -18,8 +18,10 @@
 #' @return \code{vec.se}: a vector of standard error for the estimator;
 #' @return \code{mat.asyvar}: estimated asymptotic covariance matrix \eqn{H^{-1}(\theta)J(\theta)H^{-1}(\theta)} for the estimator; and
 #' @return \code{vec.comp}: a vector of computational time for parameter and standard error estimation.
+#' @return \code{CLIC}: Composite likelihood information criterion proposed by Varin and Vidoni (2005), i.e. \eqn{-2*logCL(\theta) + 2*trace(H^{-1}(\theta)J(\theta))}
 #'
 #' @examples
+#' # Example of n.cat = 3 (Spatial ordinal regression)
 #' # True parameter
 #' vec.cutoff <- 2; vec.beta <- c(1, 2, 1, 0, -1); sigmasq <- 0.8; rho <- 0.6; radius <- 5
 #' vec.par <- c(vec.cutoff, vec.beta, sigmasq, rho)
@@ -46,8 +48,14 @@
 #' \dontrun{
 #' ord.example <- func.cle.ord(vec.yobs, mat.X, mat.lattice, radius, n.cat,
 #' n.sim=100, parallel = TRUE, n.core = 2)
+#'
 #' round(ord.example$vec.par,4)
-#' # [1]  1.8395  0.9550  1.9690  0.9565  0.0349 -1.0398  0.8200  0.5578
+#' # alpha1   beta0   beta1   beta2   beta3   beta4 sigma^2     rho
+#' # 1.8395  0.9550  1.9690  0.9565  0.0349 -1.0398  0.8200  0.5578
+#'
+#' round(ord.example$vec.se,4)
+#' # alpha1   beta0   beta1   beta2   beta3   beta4 sigma^2     rho
+#' # 0.1602  0.1222  0.1463  0.0916  0.0485  0.0889  0.1935  0.1267
 #' }
 #'
 #' # Without parallel computing
@@ -55,9 +63,42 @@
 #' \dontrun{
 #' ord.example2 <- func.cle.ord(vec.yobs, mat.X, mat.lattice, radius,
 #' n.cat, n.sim=100, parallel = FALSE)
-#' round(ord.example2$vec.par,4)
-#' # [1]  1.8395  0.9550  1.9690  0.9565  0.0349 -1.0398  0.8200  0.5578
 #' }
+#'
+#' # Example for n.cat = 2 (i.e. Spatial probit regression)
+#' # True parameter
+#' vec.beta <- c(1, 2, 1, 0, -1); sigmasq <- 0.5; rho <- 0.6; radius <- 5
+#' vec.par <- c(vec.beta, sigmasq, rho)
+#'
+#' # Coordinate matrix
+#' n.cat <- 2 ; n.lati <- n.long <- 40
+#' n.site <- n.lati * n.long
+#' mat.lattice <- cbind(rep(1:n.lati, n.long), rep(1:n.long, each=n.lati))
+#' mat.dist <- as.matrix(dist(mat.lattice, upper=TRUE, diag=TRUE))
+#' mat.cov <- sigmasq * rho^mat.dist
+#'
+#' set.seed(123)
+#' # Generate regression (design) matrix with intercept
+#' mat.X <- cbind(rep(1, n.site),scale(matrix(rnorm(n.site*(length(vec.beta)-1)),nrow=n.site)))
+#' vec.Z <- t(chol(mat.cov)) %*% rnorm(n.site) + mat.X %*% vec.beta
+#' vec.epsilon <- diag(sqrt(1-sigmasq), n.site) %*% rnorm(n.site)
+#' vec.ylat <- as.numeric(vec.Z + vec.epsilon)
+#' # Convert to the vector of observation
+#' vec.yobs <- func.obs.ord(vec.ylat, vec.alpha=c(-Inf,0,Inf))
+#'
+#' \dontrun{
+#' probit.example <- func.cle.ord(vec.yobs, mat.X, mat.lattice, radius, n.cat,
+#' n.sim=100, parallel = TRUE, n.core = 4)
+#'
+#' round(probit.example$vec.par,4)
+#' # beta0   beta1   beta2   beta3   beta4 sigma^2     rho
+#' # 1.0427  2.2250  1.0422  0.0156 -1.1489  0.4402  0.6636
+#'
+#' round(probit.example$vec.se,4)
+#' # beta0   beta1   beta2   beta3   beta4 sigma^2     rho
+#' # 0.1198  0.1413  0.0863  0.0523  0.0935  0.1600  0.1263
+#' }
+#'
 #'
 #' @references Feng, Xiaoping, Zhu, Jun, Lin, Pei-Sheng, and Steen-Adams, Michelle M. (2014) Composite likelihood Estimation for Models of Spatial Ordinal Data and Spatial Proportional Data with Zero/One values. \emph{Environmetrics} 25(8): 571--583.
 
@@ -75,8 +116,14 @@ func.cle.ord <- function(vec.yobs, mat.X, mat.lattice, radius, n.cat, n.sim = 10
 
   options(warn=-1) # Remove warning message: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
+
+  if (n.cat >=3) {
   vec.initial.par <- c(rep(0.5, n.cat - 2), 0, unname(coef(MASS::polr(factor(vec.yobs) ~ mat.X[, -1], method = "probit"))),
                        0.4, 0.2)
+  } else {
+  vec.initial.par <- c(unname(coef(glm(factor(vec.yobs) ~ mat.X[, -1],family = binomial(link = "probit")))),
+                       0.4,0.2)
+  }
   # vec.initial.par: a vector of initial values with cutoffs and betas set to the estimates from standard
   # ordered probit model with independent responses
 
@@ -96,13 +143,14 @@ func.cle.ord <- function(vec.yobs, mat.X, mat.lattice, radius, n.cat, n.sim = 10
   }
 
   fn <- function(vec.repar) -func.cl.ord.repar(vec.yobs, mat.X, mat.lattice, radius, n.cat, vec.repar)$log.lkd
-  # fn: the opposite of composite log-likelihood function to be minimized
+  # fn: negative composite log-likelihood function to be minimized
 
   gr <- function(vec.repar) -func.cl.ord.repar(vec.yobs, mat.X, mat.lattice, radius, n.cat, vec.repar)$vec.score
   # gr: a vector of opposite of score functions used as gradients
 
   t0 <- proc.time()
-  vec.repar.opt <- optim(vec.initial.repar, fn = fn, gr = gr, method = "L-BFGS-B", lower = vec.lower, upper = vec.upper)$par
+  optim.obj <- optim(vec.initial.repar, fn = fn, gr = gr, method = "L-BFGS-B", lower = vec.lower, upper = vec.upper)
+  vec.repar.opt <- optim.obj$par
   # vec.repar.opt: estimated reparameterized unknowns
 
   if (n.cat == 2) {
@@ -123,8 +171,11 @@ func.cle.ord <- function(vec.yobs, mat.X, mat.lattice, radius, n.cat, n.sim = 10
   ls.cl.repar.opt <- func.cl.ord.repar(vec.yobs, mat.X, mat.lattice, radius, n.cat, vec.repar.opt)
 
   func.outsq <- function(vec) vec %o% vec
-  mat.H.inv <- solve(matrix(rowSums(apply(ls.cl.repar.opt$mat.score, 1, func.outsq)), nrow = length(vec.repar.opt),
-                            byrow = TRUE)/ls.cl.repar.opt$weight.sum)
+
+  mat.Hessian <- matrix(rowSums(apply(ls.cl.repar.opt$mat.score, 1, func.outsq)), nrow = length(vec.repar.opt),
+                        byrow = TRUE)/ls.cl.repar.opt$weight.sum
+
+  mat.H.inv <- solve(mat.Hessian)
 
   # mat.H.inv: the inverse of H_N(theta) as in (14)
 
@@ -194,6 +245,8 @@ func.cle.ord <- function(vec.yobs, mat.X, mat.lattice, radius, n.cat, n.sim = 10
 
   mat.asyvar <- mat.A %*% mat.H.inv %*% mat.J %*% mat.H.inv %*% t(mat.A)
 
+  CLIC <- clordr::clic(logCL = optim.obj$value ,mat.hessian = mat.Hessian, mat.J = mat.J)
+
   vec.se.opt <- sqrt(diag(mat.asyvar))
   # vec.se.opt: a vector of standard error based on (16) and Theorem 1
 
@@ -203,6 +256,12 @@ func.cle.ord <- function(vec.yobs, mat.X, mat.lattice, radius, n.cat, n.sim = 10
 
   t.comp <- c(t1[3],t2[3]); names(t.comp) <- c("est", "SE")
 
+  if (n.cat == 2) {par.name <- c(paste0("beta",0:(NCOL(mat.X)-1)),"sigma^2","rho")} else{
+    par.name <- c(paste0("alpha",1:(n.cat-2)),paste0("beta",0:(NCOL(mat.X)-1)),"sigma^2","rho")
+  }
+
+  names(vec.par.opt) <- names(vec.se.opt) <- colnames(mat.asyvar) <- par.name
+
   return(list(vec.par = vec.par.opt,
-              vec.se = vec.se.opt, mat.asyvar=mat.asyvar,vec.comp=t.comp))
+              vec.se = vec.se.opt, mat.asyvar=mat.asyvar, CLIC=CLIC,vec.comp=t.comp))
 }

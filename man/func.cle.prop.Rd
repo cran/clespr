@@ -34,6 +34,8 @@ func.cle.prop(vec.yobs, mat.X, mat.lattice, radius, n.sim = 100,
 \code{mat.asyvar}: estimated asymptotic covariance matrix \eqn{H^{-1}(\theta)J(\theta)H^{-1}(\theta)} for the estimator; and
 
 \code{vec.comp}: a vector of computational time for parameter and standard error estimation.
+
+\code{CLIC}: Composite likelihood information criterion proposed by Varin and Vidoni (2005), i.e. \eqn{-2*logCL(\theta) + 2*trace(H^{-1}(\theta)J(\theta))}
 }
 \description{
 \code{func.cle.prop} performs composite likelihood estimation of parameters and their standard errors in a spatial Tobit model by maximizing its composite log-likelihood.
@@ -69,16 +71,20 @@ vec.yobs <- func.obs.prop(vec.ylat, alpha=alpha)
 \dontrun{
 prop.example <- func.cle.prop(vec.yobs, mat.X, mat.lattice, radius,
 n.sim=100, parallel = TRUE, n.core = 2)
+
 round(prop.example$vec.par,4)
-# [1] 3.8259  0.9921  1.9679  0.9455  0.0148 -0.9871  0.8386  0.5761
+# alpha   beta0   beta1   beta2   beta3   beta4 sigma^2     rho
+# 3.8259  0.9921  1.9679  0.9455  0.0148 -0.9871  0.8386  0.5761
+
+round(prop.example$vec.se ,4)
+# alpha   beta0   beta1   beta2   beta3   beta4 sigma^2     rho
+# 0.1902  0.1406  0.1103  0.0744  0.0385  0.0652  0.1527  0.1151
 }
 
 # Without parallel computing
 
 \dontrun{
 prop.example2 <- func.cle.prop(vec.yobs, mat.X, mat.lattice, radius, n.sim=100, parallel = FALSE)
-round(prop.example2$vec.par,4)
-# [1] 3.8259  0.9921  1.9679  0.9455  0.0148 -0.9871  0.8386  0.5761
 }
 
 }

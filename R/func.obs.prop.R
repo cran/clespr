@@ -6,15 +6,6 @@
 #' @param alpha a cutoff point controlling the probability of latent reponse being one.
 #' @return \code{func.obs.prop} returns a vector of observed responses.
 #'
-#' @importFrom stats coef cov dist dnorm optim pnorm rnorm
-#' @importFrom utils combn
-#' @importFrom survival survreg Surv
-#' @importFrom foreach foreach %dopar%
-#' @importFrom parallel detectCores makeCluster stopCluster
-#' @importFrom doParallel registerDoParallel
-#' @importFrom magic adiag
-#' @importFrom MASS polr
-#' @importFrom AER tobit
 #'
 #' @examples
 #'

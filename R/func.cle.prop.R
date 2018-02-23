@@ -17,6 +17,7 @@
 #' @return \code{vec.se}: a vector of standard error for the estimator;
 #' @return \code{mat.asyvar}: estimated asymptotic covariance matrix \eqn{H^{-1}(\theta)J(\theta)H^{-1}(\theta)} for the estimator; and
 #' @return \code{vec.comp}: a vector of computational time for parameter and standard error estimation.
+#' @return \code{CLIC}: Composite likelihood information criterion proposed by Varin and Vidoni (2005), i.e. \eqn{-2*logCL(\theta) + 2*trace(H^{-1}(\theta)J(\theta))}
 #'
 #' @examples
 #' # True parameter
@@ -46,16 +47,20 @@
 #' \dontrun{
 #' prop.example <- func.cle.prop(vec.yobs, mat.X, mat.lattice, radius,
 #' n.sim=100, parallel = TRUE, n.core = 2)
+#'
 #' round(prop.example$vec.par,4)
-#' # [1] 3.8259  0.9921  1.9679  0.9455  0.0148 -0.9871  0.8386  0.5761
+#' # alpha   beta0   beta1   beta2   beta3   beta4 sigma^2     rho
+#' # 3.8259  0.9921  1.9679  0.9455  0.0148 -0.9871  0.8386  0.5761
+#'
+#' round(prop.example$vec.se ,4)
+#' # alpha   beta0   beta1   beta2   beta3   beta4 sigma^2     rho
+#' # 0.1902  0.1406  0.1103  0.0744  0.0385  0.0652  0.1527  0.1151
 #' }
 #'
 #' # Without parallel computing
 #'
 #' \dontrun{
 #' prop.example2 <- func.cle.prop(vec.yobs, mat.X, mat.lattice, radius, n.sim=100, parallel = FALSE)
-#' round(prop.example2$vec.par,4)
-#' # [1] 3.8259  0.9921  1.9679  0.9455  0.0148 -0.9871  0.8386  0.5761
 #' }
 #'
 #' @references Feng, Xiaoping, Zhu, Jun, Lin, Pei-Sheng, and Steen-Adams, Michelle M. (2014) Composite likelihood Estimation for Models of Spatial Ordinal Data and Spatial Proportional Data with Zero/One values. \emph{Environmetrics} 25(8): 571--583.
@@ -71,7 +76,10 @@ func.cle.prop <- function(vec.yobs, mat.X, mat.lattice, radius, n.sim = 100, par
   gr <- function(vec.par) -func.cl.prop(vec.yobs, mat.X, mat.lattice, radius, vec.par)$vec.score
 
   t0 <- proc.time()
-  vec.par.opt <- optim(vec.initial.par, fn = fn, gr = gr, method = "L-BFGS-B", lower = vec.lower, upper = vec.upper)$par
+  optim.obj <- optim(vec.initial.par, fn = fn, gr = gr, method = "L-BFGS-B", lower = vec.lower, upper = vec.upper)
+
+  vec.par.opt <- optim.obj$par
+
   t1 <- proc.time() -t0
 
   if (output) cat("Parameter estimate is ",round(vec.par.opt,5), "\n")
@@ -80,8 +88,11 @@ func.cle.prop <- function(vec.yobs, mat.X, mat.lattice, radius, n.sim = 100, par
   ls.cl.par.opt <- func.cl.prop(vec.yobs, mat.X, mat.lattice, radius, vec.par.opt)
   func.outsq <- function(vec) vec %o% vec
 
-  mat.H.inv <- solve(matrix(rowSums(apply(ls.cl.par.opt$mat.score, 1, func.outsq)), nrow = length(vec.par.opt),
-                            byrow = TRUE)/ls.cl.par.opt$weight.sum)
+
+  mat.Hessian <- matrix(rowSums(apply(ls.cl.par.opt$mat.score, 1, func.outsq)), nrow = length(vec.par.opt),
+                            byrow = TRUE)/ls.cl.par.opt$weight.sum
+
+  mat.H.inv <- solve(mat.Hessian)
 
   t0 <- proc.time()
 
@@ -136,6 +147,11 @@ func.cle.prop <- function(vec.yobs, mat.X, mat.lattice, radius, n.sim = 100, par
 
   t.comp <- c(t1[3],t2[3]); names(t.comp) <- c("est", "SE")
 
-  return(list(vec.par = vec.par.opt,
+  CLIC <- clordr::clic(logCL = optim.obj$value ,mat.hessian = mat.Hessian, mat.J = mat.J)
+
+  names(vec.par.opt) <- names(vec.se.opt) <- colnames(mat.asyvar) <-
+    c("alpha",paste0("beta",0:(NCOL(mat.X)-1)),"sigma^2","rho")
+
+  return(list(vec.par = vec.par.opt,CLIC=CLIC,
               vec.se = vec.se.opt, mat.asyvar=mat.asyvar,vec.comp=t.comp))
 }
